@@ -28,10 +28,11 @@ The following file types are included:
 <file>README.md</file>
 <metadata>
 path: README.md
-size: 2993 bytes
+size: 4302 bytes
 </metadata>
 
 [![CodeQL Advanced](https://github.com/ngmisl/llmstxt/actions/workflows/codeql.yml/badge.svg)](https://github.com/ngmisl/llmstxt/actions/workflows/codeql.yml)
+[![Update llms.txt](https://github.com/ngmisl/llmstxt/actions/workflows/update-llms.yml/badge.svg)](https://github.com/ngmisl/llmstxt/actions/workflows/update-llms.yml)
 
 # llmstxt
 
@@ -79,16 +80,51 @@ uv pip install -e ".[dev]"
 
 ## Usage
 
+### Local Usage
+
 ```bash
 # Generate llms.txt from current directory
 python llms.py
 ```
 
 The script will:
-
 1. Scan the current directory recursively
 2. Process files according to .gitignore rules
 3. Generate `llms.txt` with compressed content
+
+### GitHub Actions Integration
+
+There are two ways to use this tool with GitHub Actions:
+
+1. **For Your Own Repository**
+   ```bash
+   # Create a workflow file
+   mkdir -p .github/workflows
+   curl -o .github/workflows/update-llms.yml https://raw.githubusercontent.com/ngmisl/llmstxt/main/.github/workflows/update-llms.yml
+   ```
+
+   The workflow will:
+   - Run automatically on pushes to main/master
+   - Create a PR with updated llms.txt when changes are detected
+   - Can be manually triggered from the Actions tab
+
+2. **For Remote Repositories**
+   You can trigger the action for any repository using the GitHub API:
+
+   ```bash
+   curl -X POST \
+     -H "Authorization: token $GITHUB_TOKEN" \
+     -H "Accept: application/vnd.github.v3+json" \
+     https://api.github.com/repos/ngmisl/llmstxt/dispatches \
+     -d '{"event_type": "update-llms", "client_payload": {"repository": "https://github.com/user/repo.git"}}'
+   ```
+
+   This will:
+   - Clone the target repository
+   - Generate llms.txt
+   - Create a PR with the changes
+
+The workflow uses GitHub's PR system to ensure changes are reviewed before being merged.
 
 ## Output Format
 
@@ -213,25 +249,22 @@ SOFTWARE.
 <metadata>
 path: pyproject.toml
 type: toml
-size: 1602 bytes
+size: 1696 bytes
 </metadata>
 
 <content type='toml'>
 [project]
 name = "llmstxt"
 version = "0.1.0"
-description = "A tool to compress and process code files into a single text file"
+description = "Compress code files into LLM-friendly format"
+authors = [{ name = "Aunova", email = "chris@aunova.net" }]
+dependencies = ["gitignore_parser>=0.1.11", "astroid>=3.0.1"]
 requires-python = ">=3.8"
-dependencies = [
-    "gitignore-parser",
-    "astroid",
-]
+readme = "README.md"
+license = { text = "MIT" }
 
 [project.optional-dependencies]
-dev = [
-    "mypy",
-    "ruff",
-]
+dev = ["mypy>=1.7.0", "ruff>=0.1.8"]
 
 [build-system]
 requires = ["hatchling"]
@@ -328,9 +361,45 @@ size: 114 bytes
 
 </content>
 
-<file>llms.py</file>
+<file>llmstxt/__init__.py</file>
 <metadata>
-path: llms.py
+path: llmstxt/__init__.py
+type: py
+size: 154 bytes
+</metadata>
+
+<imports>
+from .llms import generate_llms_txt
+</imports>
+
+<code lang='py'>
+"""llmstxt - Compress code files into LLM-friendly format."""
+from .llms import generate_llms_txt
+__version__ = '0.1.0'
+__all__ = ['generate_llms_txt']
+</code>
+
+<file>llmstxt/__main__.py</file>
+<metadata>
+path: llmstxt/__main__.py
+type: py
+size: 131 bytes
+</metadata>
+
+<imports>
+from .llms import generate_llms_txt
+</imports>
+
+<code lang='py'>
+"""Command-line interface for llmstxt."""
+from .llms import generate_llms_txt
+if __name__ == '__main__':
+    generate_llms_txt()
+</code>
+
+<file>llmstxt/llms.py</file>
+<metadata>
+path: llmstxt/llms.py
 type: py
 size: 12329 bytes
 </metadata>
@@ -540,12 +609,13 @@ if __name__ == '__main__':
 <metadata>
 path: .vscode/settings.json
 type: json
-size: 513 bytes
+size: 527 bytes
 </metadata>
 
 <content type='json'>
 {
   "cSpell.words": [
+    "Aunova",
     "celerybeat",
     "Connor",
     "cython",
@@ -582,58 +652,6 @@ size: 513 bytes
 }
 
 </content>
-
-<file>.venv/bin/activate_this.py</file>
-<metadata>
-path: .venv/bin/activate_this.py
-type: py
-size: 2390 bytes
-</metadata>
-
-<imports>
-# included in all copies or substantial portions of the Software.
-import runpy
-from __future__ import annotations
-import os
-import site
-import sys
-    msg = "You must use import runpy; runpy.run_path(this_file)"
-    raise AssertionError(msg) from exc
-base = bin_dir[: -len("bin") - 1]  # strip away the bin part from the __file__, plus the path separator
-# add the virtual environments libraries to the host python import mechanism
-</imports>
-
-<code lang='py'>
-"""
-Activate virtualenv for current interpreter:
-
-import runpy
-runpy.run_path(this_file)
-
-This can be used when you must use an existing Python interpreter, not the virtualenv bin/python.
-"""
-from __future__ import annotations
-import os
-import site
-import sys
-try:
-    abs_file = os.path.abspath(__file__)
-except NameError as exc:
-    msg = 'You must use import runpy; runpy.run_path(this_file)'
-    raise AssertionError(msg) from exc
-bin_dir = os.path.dirname(abs_file)
-base = bin_dir[:-len('bin') - 1]
-os.environ['PATH'] = os.pathsep.join([bin_dir, *os.environ.get('PATH', '').split(os.pathsep)])
-os.environ['VIRTUAL_ENV'] = base
-os.environ['VIRTUAL_ENV_PROMPT'] = 'llmstxt' or os.path.basename(base)
-prev_length = len(sys.path)
-for lib in '../lib/python3.12/site-packages'.split(os.pathsep):
-    path = os.path.realpath(os.path.join(bin_dir, lib))
-    site.addsitedir(path)
-sys.path[:] = sys.path[prev_length:] + sys.path[0:prev_length]
-sys.real_prefix = sys.prefix
-sys.prefix = base
-</code>
 
 <file>.github/workflows/codeql.yml</file>
 <metadata>
@@ -737,4 +755,147 @@ jobs:
         category: "/language:${{matrix.language}}"
 
 </content>
+
+<file>.github/workflows/update-llms.yml</file>
+<metadata>
+path: .github/workflows/update-llms.yml
+type: yml
+size: 2404 bytes
+</metadata>
+
+<content type='yml'>
+name: Update llms.txt
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # Allow manual triggering
+  repository_dispatch:  # Allow external triggers
+    types: [update-llms]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-llms:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Create venv and install dependencies
+        run: |
+          uv venv
+          . .venv/bin/activate
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            uv pip install git+https://github.com/ngmisl/llmstxt.git
+          else
+            uv pip install -e .
+          fi
+
+      - name: Clone target repository
+        if: github.event_name == 'repository_dispatch'
+        run: |
+          git clone ${{ github.event.client_payload.repository }} target_repo
+          cd target_repo
+          python -c "from llmstxt import generate_llms_txt; generate_llms_txt()"
+
+      - name: Generate llms.txt for current repository
+        if: github.event_name != 'repository_dispatch'
+        run: |
+          . .venv/bin/activate
+          python -c "from llmstxt import generate_llms_txt; generate_llms_txt()"
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --quiet llms.txt; then
+            echo "No changes to llms.txt"
+            echo "changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "Changes detected in llms.txt"
+            echo "changes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Pull Request
+        if: steps.changes.outputs.changes == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: "chore: update llms.txt"
+          title: "chore: update llms.txt"
+          body: |
+            This PR updates the llms.txt file with the latest code compression.
+            
+            Changes were automatically generated by [llmstxt](https://github.com/ngmisl/llmstxt).
+          branch: update-llms
+          delete-branch: true
+
+</content>
+
+<file>.venv/bin/activate_this.py</file>
+<metadata>
+path: .venv/bin/activate_this.py
+type: py
+size: 2390 bytes
+</metadata>
+
+<imports>
+# included in all copies or substantial portions of the Software.
+import runpy
+from __future__ import annotations
+import os
+import site
+import sys
+    msg = "You must use import runpy; runpy.run_path(this_file)"
+    raise AssertionError(msg) from exc
+base = bin_dir[: -len("bin") - 1]  # strip away the bin part from the __file__, plus the path separator
+# add the virtual environments libraries to the host python import mechanism
+</imports>
+
+<code lang='py'>
+"""
+Activate virtualenv for current interpreter:
+
+import runpy
+runpy.run_path(this_file)
+
+This can be used when you must use an existing Python interpreter, not the virtualenv bin/python.
+"""
+from __future__ import annotations
+import os
+import site
+import sys
+try:
+    abs_file = os.path.abspath(__file__)
+except NameError as exc:
+    msg = 'You must use import runpy; runpy.run_path(this_file)'
+    raise AssertionError(msg) from exc
+bin_dir = os.path.dirname(abs_file)
+base = bin_dir[:-len('bin') - 1]
+os.environ['PATH'] = os.pathsep.join([bin_dir, *os.environ.get('PATH', '').split(os.pathsep)])
+os.environ['VIRTUAL_ENV'] = base
+os.environ['VIRTUAL_ENV_PROMPT'] = 'llmstxt' or os.path.basename(base)
+prev_length = len(sys.path)
+for lib in '../lib/python3.12/site-packages'.split(os.pathsep):
+    path = os.path.realpath(os.path.join(bin_dir, lib))
+    site.addsitedir(path)
+sys.path[:] = sys.path[prev_length:] + sys.path[0:prev_length]
+sys.real_prefix = sys.prefix
+sys.prefix = base
+</code>
 
